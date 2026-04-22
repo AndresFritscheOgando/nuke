@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build — ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact: nuke-linux-x86_64
+            cross: false
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            artifact: nuke-linux-aarch64
+            cross: true
+          - os: macos-13
+            target: x86_64-apple-darwin
+            artifact: nuke-macos-x86_64
+            cross: false
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: nuke-macos-aarch64
+            cross: false
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: nuke-windows-x86_64.exe
+            cross: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools (x86_64 Linux)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Install cross (aarch64 Linux)
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build (cross)
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Build (native)
+        if: "!matrix.cross"
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Stage artifact (Unix)
+        if: matrix.os != 'windows-latest'
+        run: cp target/${{ matrix.target }}/release/nuke ${{ matrix.artifact }}
+
+      - name: Stage artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: cp target/${{ matrix.target }}/release/nuke.exe ${{ matrix.artifact }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Upload install.sh
+        run: cp install.sh artifacts/install.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
