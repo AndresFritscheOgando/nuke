@@ -1,0 +1,104 @@
+.TH NUKE 1 "2026-04-23" "nuke" "User Commands"
+.SH NAME
+nuke \- safely move directory contents to a timestamped trash folder
+.SH SYNOPSIS
+.B nuke
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B nuke
+clears a target directory by moving its contents to
+.IR ~/.nuke-trash/<timestamp>/
+instead of permanently deleting them.
+Nothing is ever erased — every item can be recovered by browsing the trash folder.
+.PP
+By default
+.B nuke
+targets the current working directory and moves only regular files,
+leaving subdirectories in place.
+.SH OPTIONS
+.TP
+.BR \-a ", " \-\-all
+Move files \fIand\fR subdirectories (everything at the top level of the target).
+.TP
+.BR \-\-files\-only
+Move only regular files; leave subdirectories untouched.
+This is the default behavior and is rarely needed explicitly.
+.TP
+.BR \-t ", " \-\-target " \fIPATH\fR"
+Target directory to nuke.
+Defaults to the current working directory when omitted.
+.TP
+.BR \-\-force
+Skip the interactive confirmation prompt and proceed immediately.
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit.
+.TP
+.BR \-V ", " \-\-version
+Print the version number and exit.
+.SH TRASH BEHAVIOR
+Each invocation creates a unique timestamped directory:
+.PP
+.RS
+.I ~/.nuke-trash/YYYY-MM-DD_HH-MM-SS/
+.RE
+.PP
+Items moved during that run are placed inside it.
+Because each run gets its own folder there are no collisions between separate invocations.
+.PP
+To recover items, move them back manually:
+.PP
+.RS
+.EX
+mv ~/.nuke-trash/2026-04-23_10-00-00/myfile.txt ./
+.EE
+.RE
+.PP
+To permanently discard all trash:
+.PP
+.RS
+.EX
+rm -rf ~/.nuke-trash
+.EE
+.RE
+.SH SAFETIES
+.B nuke
+refuses to operate on
+.I $HOME
+or
+.IR / .
+It will exit with an error rather than move the contents of either directory.
+.SH EXAMPLES
+Preview and confirm before nuking files in the current directory:
+.PP
+.RS
+.EX
+nuke
+.EE
+.RE
+.PP
+Nuke only files in \fI/tmp/scratch\fR without prompting:
+.PP
+.RS
+.EX
+nuke \-t /tmp/scratch \-\-force
+.EE
+.RE
+.PP
+Nuke everything (files + subdirectories) in \fI/tmp/scratch\fR:
+.PP
+.RS
+.EX
+nuke \-\-all \-t /tmp/scratch \-\-force
+.EE
+.RE
+.SH FILES
+.TP
+.I ~/.nuke-trash/
+Root trash directory.
+Each run appends a timestamped subdirectory.
+.SH AUTHOR
+Written by Andres Fritsche Ogando.
+.SH SEE ALSO
+.BR rm (1),
+.BR mv (1)

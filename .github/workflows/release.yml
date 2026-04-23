@@ -24,7 +24,7 @@ jobs:
             target: aarch64-unknown-linux-musl
             artifact: nuke-linux-aarch64
             cross: true
-          - os: macos-13
+          - os: macos-latest
             target: x86_64-apple-darwin
             artifact: nuke-macos-x86_64
             cross: false
@@ -84,8 +84,10 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Upload install.sh
-        run: cp install.sh artifacts/install.sh
+      - name: Upload install.sh and man page
+        run: |
+          cp install.sh artifacts/install.sh
+          cp nuke.1 artifacts/nuke.1
 
       - uses: softprops/action-gh-release@v2
         with:
