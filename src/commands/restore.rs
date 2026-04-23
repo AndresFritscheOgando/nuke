@@ -10,7 +10,7 @@ pub fn run() -> Result<()> {
     let sessions = list_sessions()?;
 
     if sessions.is_empty() {
-        println!("{}", "No sessions found.".yellow());
+        println!("{}", "No trash sessions found.".yellow());
         return Ok(());
     }
 
@@ -33,7 +33,7 @@ pub fn run() -> Result<()> {
         .interact()
         .context("failed to show session picker")?;
 
-    let session = &sessions[selection];
+    let session = sessions.get(selection).context("session index out of bounds")?;
 
     let dest_str: String = Input::new()
         .with_prompt("Restore destination (blank = cwd)")

@@ -41,14 +41,6 @@ impl Trash {
         move_item(item, &dest)
     }
 
-    /// Moves a single file or directory into the trash folder (legacy flat layout).
-    pub fn send(&self, item: &Path) -> Result<()> {
-        let name = item
-            .file_name()
-            .with_context(|| format!("item '{}' has no file name", item.display()))?;
-        let dest = self.path.join(name);
-        move_item(item, &dest)
-    }
 }
 
 /// Returns all trash sessions sorted newest-first, reading from `~/.nuke-trash/`.
