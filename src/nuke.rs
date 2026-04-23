@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use colored::Colorize;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::cli::Scope;
 use crate::trash::Trash;
@@ -40,19 +41,20 @@ pub fn run(config: NukeConfig) -> Result<()> {
 
     let trash = Trash::new()?;
 
-    let mut all_items: Vec<(PathBuf, String)> = Vec::new();
+    let mut all_items: Vec<(PathBuf, Arc<String>)> = Vec::new();
     let mut target_counts: Vec<(PathBuf, usize)> = Vec::new();
 
     for target in &config.targets {
-        let target_name = target
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown")
-            .to_string();
+        let target_name = Arc::new(
+            target
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| target.to_string_lossy().into_owned()),
+        );
         let items = collect_items(target, &config.scope, &include_pattern, &exclude_patterns)?;
         let count = items.len();
         for item in items {
-            all_items.push((item, target_name.clone()));
+            all_items.push((item, Arc::clone(&target_name)));
         }
         target_counts.push((target.clone(), count));
     }
@@ -66,8 +68,8 @@ pub fn run(config: NukeConfig) -> Result<()> {
     preview(&config.scope, &trash, &target_counts, total, config.dry_run);
 
     if config.dry_run {
-        for (item, _) in &all_items {
-            println!("  would move: {}", item.display());
+        for (item, target_name) in &all_items {
+            println!("  [{}] would move: {}", target_name, item.display());
         }
         return Ok(());
     }
@@ -79,7 +81,7 @@ pub fn run(config: NukeConfig) -> Result<()> {
     trash.create()?;
     let mut errors = 0usize;
     for (item, target_name) in &all_items {
-        if let Err(e) = trash.send_to_namespace(item, target_name) {
+        if let Err(e) = trash.send_to_namespace(item, &target_name) {
             eprintln!("{} {}", "error:".red().bold(), e);
             errors += 1;
         }
@@ -190,11 +192,7 @@ fn preview(
         println!("  Trash  : {}", trash.path.display());
     }
     println!("  Total  : {}", total);
-    let border = if dry_run {
-        "------------------------------"
-    } else {
-        "--------------------"
-    };
+    let border = "-".repeat(header.len());
     println!("{}", border.bold());
 }
 

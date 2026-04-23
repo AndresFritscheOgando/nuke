@@ -22,19 +22,24 @@ fn run() -> Result<()> {
         std::process::exit(1);
     }
 
+    let scope = cli.scope();
+    let force = cli.force;
+    let dry_run = cli.dry_run;
+    let pattern = cli.pattern;
+    let exclude = cli.exclude;
     let targets = if cli.targets.is_empty() {
         vec![std::env::current_dir().context("failed to get current directory")?]
     } else {
-        cli.targets.clone()
+        cli.targets
     };
 
     let config = nuke::NukeConfig {
         targets,
-        scope: cli.scope(),
-        force: cli.force,
-        dry_run: cli.dry_run,
-        pattern: cli.pattern.clone(),
-        exclude: cli.exclude.clone(),
+        scope,
+        force,
+        dry_run,
+        pattern,
+        exclude,
     };
 
     nuke::run(config)
