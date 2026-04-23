@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -55,7 +55,7 @@ pub enum Command {
     Empty(EmptyArgs),
 }
 
-#[derive(Parser, Debug)]
+#[derive(Args, Debug)]
 pub struct EmptyArgs {
     /// Delete all sessions without interactive selection
     #[arg(long = "all")]
@@ -75,7 +75,6 @@ impl Cli {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clap::Parser;
 
     #[test]
     fn test_parse_default_nuke_flags() {

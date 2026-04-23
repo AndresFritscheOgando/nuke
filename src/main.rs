@@ -2,7 +2,7 @@ mod cli;
 mod nuke;
 mod trash;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use colored::Colorize;
 
@@ -28,7 +28,8 @@ fn run() -> Result<()> {
         .targets
         .into_iter()
         .next()
-        .unwrap_or_else(|| std::env::current_dir().unwrap());
+        .map(Ok)
+        .unwrap_or_else(|| std::env::current_dir().context("failed to get current directory"))?;
 
     let config = nuke::NukeConfig {
         target,

@@ -91,11 +91,13 @@ pub fn list_sessions_in(trash_root: &Path) -> Result<Vec<TrashSession>> {
 /// Moves all top-level entries from a session to `dest`. Aborts if any name conflicts exist.
 /// Removes the session directory on success.
 pub fn restore_session(session: &TrashSession, dest: &Path) -> Result<()> {
-    let mut conflicts = Vec::new();
-    for entry in std::fs::read_dir(&session.path)
+    let entries: Vec<_> = std::fs::read_dir(&session.path)
         .with_context(|| format!("failed to read session '{}'", session.path.display()))?
-    {
-        let entry = entry.context("failed to read session entry")?;
+        .collect::<std::result::Result<_, _>>()
+        .context("failed to read session entry")?;
+
+    let mut conflicts = Vec::new();
+    for entry in &entries {
         if dest.join(entry.file_name()).exists() {
             conflicts.push(entry.file_name().to_string_lossy().to_string());
         }
@@ -107,10 +109,7 @@ pub fn restore_session(session: &TrashSession, dest: &Path) -> Result<()> {
         );
     }
 
-    for entry in std::fs::read_dir(&session.path)
-        .with_context(|| format!("failed to read session '{}'", session.path.display()))?
-    {
-        let entry = entry.context("failed to read session entry")?;
+    for entry in &entries {
         move_item(&entry.path(), &dest.join(entry.file_name()))?;
     }
 
@@ -142,7 +141,10 @@ pub fn measure_session(path: &Path) -> Result<(usize, u64)> {
         let entry = entry.with_context(|| format!("failed to walk '{}'", path.display()))?;
         if entry.file_type().is_file() {
             count += 1;
-            size += entry.metadata().map(|m| m.len()).unwrap_or(0);
+            size += entry
+                .metadata()
+                .with_context(|| format!("failed to read metadata for '{}'", entry.path().display()))?
+                .len();
         }
     }
     Ok((count, size))
@@ -264,6 +266,10 @@ mod tests {
         restore_session(&session, dest.path()).unwrap();
 
         assert!(dest.path().join("target").join("file.txt").exists());
+        assert_eq!(
+            fs::read(dest.path().join("target").join("file.txt")).unwrap(),
+            b"hello"
+        );
         assert!(!session_path.exists());
     }
 
