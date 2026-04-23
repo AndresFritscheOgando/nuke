@@ -2,7 +2,7 @@ mod cli;
 mod nuke;
 mod trash;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 
@@ -16,15 +16,24 @@ fn main() {
 fn run() -> Result<()> {
     let cli = cli::Cli::parse();
 
-    let target = match cli.target.clone() {
-        Some(p) => p,
-        None => std::env::current_dir().context("failed to get current directory")?,
-    };
+    // Subcommand dispatch — stubs until commands module is added in later tasks
+    if cli.command.is_some() {
+        eprintln!("Subcommands not yet implemented.");
+        std::process::exit(1);
+    }
+
+    let scope = cli.scope();
+    let force = cli.force;
+    let target = cli
+        .targets
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| std::env::current_dir().unwrap());
 
     let config = nuke::NukeConfig {
         target,
-        scope: cli.scope(),
-        force: cli.force,
+        scope,
+        force,
     };
 
     nuke::run(config)
