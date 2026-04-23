@@ -16,25 +16,25 @@ fn main() {
 fn run() -> Result<()> {
     let cli = cli::Cli::parse();
 
-    // Subcommand dispatch — stubs until commands module is added in later tasks
+    // Subcommand dispatch — stubs until commands module added in next task
     if cli.command.is_some() {
         eprintln!("Subcommands not yet implemented.");
         std::process::exit(1);
     }
 
-    let scope = cli.scope();
-    let force = cli.force;
-    let target = cli
-        .targets
-        .into_iter()
-        .next()
-        .map(Ok)
-        .unwrap_or_else(|| std::env::current_dir().context("failed to get current directory"))?;
+    let targets = if cli.targets.is_empty() {
+        vec![std::env::current_dir().context("failed to get current directory")?]
+    } else {
+        cli.targets.clone()
+    };
 
     let config = nuke::NukeConfig {
-        target,
-        scope,
-        force,
+        targets,
+        scope: cli.scope(),
+        force: cli.force,
+        dry_run: cli.dry_run,
+        pattern: cli.pattern.clone(),
+        exclude: cli.exclude.clone(),
     };
 
     nuke::run(config)
