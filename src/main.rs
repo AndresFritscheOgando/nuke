@@ -1,4 +1,5 @@
 mod cli;
+mod commands;
 mod nuke;
 mod trash;
 
@@ -16,31 +17,32 @@ fn main() {
 fn run() -> Result<()> {
     let cli = cli::Cli::parse();
 
-    // Subcommand dispatch — stubs until commands module added in next task
-    if cli.command.is_some() {
-        eprintln!("Subcommands not yet implemented.");
-        std::process::exit(1);
+    match cli.command {
+        Some(cli::Command::List) => commands::list::run(),
+        Some(cli::Command::Restore) => commands::restore::run(),
+        Some(cli::Command::Empty(args)) => commands::empty::run(args.all),
+        None => {
+            let scope = cli.scope();
+            let force = cli.force;
+            let dry_run = cli.dry_run;
+            let pattern = cli.pattern;
+            let exclude = cli.exclude;
+            let targets = if cli.targets.is_empty() {
+                vec![std::env::current_dir().context("failed to get current directory")?]
+            } else {
+                cli.targets
+            };
+
+            let config = nuke::NukeConfig {
+                targets,
+                scope,
+                force,
+                dry_run,
+                pattern,
+                exclude,
+            };
+
+            nuke::run(config)
+        }
     }
-
-    let scope = cli.scope();
-    let force = cli.force;
-    let dry_run = cli.dry_run;
-    let pattern = cli.pattern;
-    let exclude = cli.exclude;
-    let targets = if cli.targets.is_empty() {
-        vec![std::env::current_dir().context("failed to get current directory")?]
-    } else {
-        cli.targets
-    };
-
-    let config = nuke::NukeConfig {
-        targets,
-        scope,
-        force,
-        dry_run,
-        pattern,
-        exclude,
-    };
-
-    nuke::run(config)
 }
