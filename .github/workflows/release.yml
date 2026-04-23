@@ -24,7 +24,7 @@ jobs:
             target: aarch64-unknown-linux-musl
             artifact: nuke-linux-aarch64
             cross: true
-          - os: macos-13
+          - os: macos-latest
             target: x86_64-apple-darwin
             artifact: nuke-macos-x86_64
             cross: false
