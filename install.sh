@@ -4,6 +4,7 @@ set -e
 REPO="AndresFritscheOgando/nuke"
 BIN="nuke"
 INSTALL_DIR="/usr/local/bin"
+MAN_DIR="/usr/local/share/man/man1"
 
 # Detect OS
 OS=$(uname -s)
@@ -51,6 +52,24 @@ else
   sudo mv /tmp/nuke "$INSTALL_DIR/$BIN"
 fi
 
+MAN_URL="https://github.com/$REPO/releases/download/$LATEST/nuke.1"
+echo "Downloading man page..."
+curl -fsSL "$MAN_URL" -o /tmp/nuke.1
+
+if [ -w "$MAN_DIR" ]; then
+  mkdir -p "$MAN_DIR"
+  mv /tmp/nuke.1 "$MAN_DIR/nuke.1"
+else
+  sudo mkdir -p "$MAN_DIR"
+  sudo mv /tmp/nuke.1 "$MAN_DIR/nuke.1"
+fi
+
+# Rebuild the man database if mandb is available
+if command -v mandb > /dev/null 2>&1; then
+  sudo mandb -q 2>/dev/null || true
+fi
+
 echo ""
 echo "nuke $LATEST installed to $INSTALL_DIR/$BIN"
+echo "Man page installed — run 'man nuke' to read it."
 echo "Run 'nuke --help' to get started."
